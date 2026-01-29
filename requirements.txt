@@ -1,29 +1,27 @@
 # FastAPI & Web
-fastapi==0.109.2
-uvicorn[standard]==0.27.1
-python-multipart==0.0.9
-pydantic==2.6.1
-pydantic-settings==2.1.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
 
 # Audio Processing
-librosa==0.10.1
-soundfile==0.12.1
-scipy==1.12.0
-numpy==1.26.4
-pydub==0.25.1
+librosa>=0.10.1
+soundfile>=0.12.1
+scipy>=1.12.0
+numpy>=1.26.0,<2.0
+pydub>=0.25.1
+numba>=0.59.0
 
-# ML/AI
-torch==2.2.0
-torchaudio==2.2.0
-transformers==4.37.2
-speechbrain==1.0.0
+# ML/AI - Hugging Face Transformers
+torch>=2.2.0
+torchaudio>=2.2.0
+transformers>=4.37.0
 
 # Utilities
-python-dotenv==1.0.1
-httpx==0.26.0
-tenacity==8.2.3
+python-dotenv>=1.0.0
+httpx>=0.26.0
 
 # Testing
-pytest==8.0.0
-pytest-asyncio==0.23.4
-httpx==0.26.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
