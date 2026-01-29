@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  voiceauth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: voiceauth-api
+    ports:
+      - "8000:8000"
+    environment:
+      - API_KEY=${API_KEY:-sk_voiceauth_dev_key_12345}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - USE_GPU=${USE_GPU:-false}
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Redis for caching (future enhancement)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: voiceauth-redis
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: voiceauth-network
