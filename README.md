@@ -1,6 +1,6 @@
 # 🎙️ VoiceAuth - AI Voice Detection API
 
-Detect whether a voice sample is **AI-generated** or **Human** across 5 languages using ensemble ML models.
+Detect whether a voice sample is **AI-generated** or **Human** across 5 languages using a custom-trained deep learning model.
 
 ## 🌍 Supported Languages
 - Tamil
@@ -9,10 +9,12 @@ Detect whether a voice sample is **AI-generated** or **Human** across 5 language
 - Malayalam
 - Telugu
 
-## 🧠 Detection Methods
-1. **Feature-based Analysis** - MFCC, pitch, spectral, energy patterns
-2. **Wav2Vec2 Deep Learning** - Facebook's pre-trained speech model
-3. **Ensemble Voting** - Combines both methods for best accuracy
+## 🧠 Detection Method
+
+Uses a **custom-trained Keras model** specifically designed to classify AI-generated vs human voices:
+- Trained on a diverse dataset of AI and human voice samples
+- Extracts comprehensive audio features (MFCC, spectral, energy patterns)
+- High accuracy classification with confidence scoring
 
 ---
 
@@ -51,7 +53,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # 3. Create directories
-mkdir -p models data/sample_audio logs
+mkdir -p data/sample_audio logs
 
 # 4. Set up environment
 cp .env.example .env
@@ -79,7 +81,7 @@ curl http://localhost:8000/api/health
 
 #### 2. Voice Detection
 ```bash
-curl -X POST "http://localhost:8000/api/voice-detection?use_deep_learning=true" \
+curl -X POST "http://localhost:8000/api/voice-detection" \
   -H "Content-Type: application/json" \
   -H "x-api-key: sk_voiceauth_dev_key_12345" \
   -d '{
@@ -89,11 +91,6 @@ curl -X POST "http://localhost:8000/api/voice-detection?use_deep_learning=true" 
   }'
 ```
 
-**Query Parameters:**
-- `use_deep_learning` (optional, default: `true`)
-  - `true` - Use Wav2Vec2 + features (more accurate, slower first time)
-  - `false` - Use features only (faster)
-
 **Response:**
 ```json
 {
@@ -101,7 +98,7 @@ curl -X POST "http://localhost:8000/api/voice-detection?use_deep_learning=true" 
   "language": "English",
   "classification": "AI_GENERATED",
   "confidenceScore": 0.87,
-  "explanation": "Low temporal variation in speech embeddings; High frame-to-frame consistency"
+  "explanation": "Custom model detected AI-generated voice patterns (confidence: 87.0%)"
 }
 ```
 
@@ -119,8 +116,7 @@ python test_local.py
 This will test:
 - ✅ Health check endpoint
 - ✅ API authentication
-- ✅ Voice detection (feature-based)
-- ✅ Voice detection (deep learning)
+- ✅ Voice detection
 - ✅ All 5 supported languages
 
 ### Run Unit Tests
@@ -163,16 +159,19 @@ VoiceAuth/
 │   │   ├── routes.py            # API endpoints
 │   │   └── schemas.py           # Request/Response models
 │   ├── models/
-│   │   ├── detector.py          # Feature-based detector
-│   │   ├── wav2vec2_detector.py # Deep learning detector
-│   │   └── ensemble.py          # Ensemble combining both
+│   │   ├── custom_classifier.py # Custom trained Keras model
+│   │   ├── detector.py          # Feature analysis module
+│   │   └── ensemble.py          # Detection orchestrator
 │   ├── utils/
 │   │   └── audio_processor.py   # Audio processing pipeline
 │   ├── config.py                # Configuration
 │   └── main.py                  # FastAPI app
+├── new_model/                   # Custom trained model files
+│   ├── ai_human_voice_classifier.h5
+│   ├── feature_scaler.pkl
+│   └── label_encoder.pkl
 ├── tests/
 │   └── test_api.py              # API tests
-├── models/                      # Downloaded ML models (auto-created)
 ├── setup.sh                     # Setup script
 ├── run.sh                       # Run server script
 ├── test_local.py                # Local testing script
@@ -211,7 +210,7 @@ PORT=8000
 DEBUG=true
 
 # Models
-MODEL_CACHE_DIR=./models
+MODEL_CACHE_DIR=./new_model
 USE_GPU=false
 
 # Audio Limits
@@ -223,15 +222,14 @@ MAX_AUDIO_DURATION_SECONDS=60
 
 ## 📊 Model Performance
 
-### First Request (Wav2Vec2 Download)
-- Downloads ~360MB model from Hugging Face
-- Takes 1-2 minutes (one-time only)
-- Cached in `./models/` for future use
+### Response Times
+- Typical request: ~1-2 seconds
+- First request may take slightly longer (model loading)
 
-### Subsequent Requests
-- Feature-based: ~0.5-1s
-- With Wav2Vec2: ~2-3s
-- Ensemble: ~2-3s
+### Model Details
+- **Architecture:** Custom Keras neural network
+- **Input:** Audio features (MFCC, spectral, energy patterns)
+- **Output:** Binary classification (AI_GENERATED / HUMAN) with confidence score
 
 ---
 
@@ -255,11 +253,14 @@ brew install ffmpeg
 sudo apt-get install ffmpeg libsndfile1
 ```
 
-### Wav2Vec2 download fails
+### Model loading fails
 ```bash
-# Set Hugging Face cache directory
-export HF_HOME=./models
-export TRANSFORMERS_CACHE=./models
+# Ensure the new_model directory exists with all files
+ls -la new_model/
+# Should show:
+# - ai_human_voice_classifier.h5
+# - feature_scaler.pkl
+# - label_encoder.pkl
 ```
 
 ---
@@ -315,11 +316,10 @@ MIT License - See LICENSE file for details
 
 ## 💡 Tips
 
-1. **First run with Wav2Vec2** will download the model (~360MB)
-2. Use `use_deep_learning=false` for faster testing
-3. Check logs in console for detailed processing info
-4. Use Swagger UI for interactive API testing
+1. Use Swagger UI for interactive API testing
+2. Check logs in console for detailed processing info
+3. The custom model is optimized for common AI voice generators
 
 ---
 
-**Built with ❤️ using FastAPI, Hugging Face Transformers, and Librosa**
+**Built with ❤️ using FastAPI, TensorFlow/Keras, and Librosa**
