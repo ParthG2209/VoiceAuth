@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     debug: bool = True
     
     # Model Configuration
-    model_cache_dir: str = "./models"
+    model_cache_dir: str = "./new_model"
     use_gpu: bool = False
     
     # Rate Limiting
