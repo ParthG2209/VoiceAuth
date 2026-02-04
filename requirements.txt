@@ -14,7 +14,7 @@ pydub>=0.25.1
 numba>=0.59.0
 
 # ML/AI - TensorFlow for Apple Silicon
-tensorflow-macos>=2.10.0
+tensorflow>=2.10.0
 
 # Data Processing
 scikit-learn>=1.2.0
