@@ -5,7 +5,7 @@ Main endpoint: POST /api/voice-detection
 
 import logging
 import time
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile, Form
 
 from app.api.auth import validate_api_key
 from app.api.schemas import (
@@ -124,6 +124,8 @@ async def detect_voice(
             explanation=detection_result.explanation
         )
     
+
+    
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
@@ -137,6 +139,80 @@ async def detect_voice(
                 "status": "error",
                 "message": "Internal server error during voice analysis"
             }
+        )
+
+
+@router.post(
+    "/voice-detection/upload",
+    response_model=VoiceDetectionResponse,
+    summary="Detect Voice (File Upload)",
+    description="Upload an audio file directly (multipart/form-data) for detection."
+)
+async def detect_voice_upload(
+    file: UploadFile = File(..., description="Audio file (MP3/WAV)"),
+    language: str = Form(..., description="Language of the audio"),
+    api_key: str = Depends(validate_api_key),
+    use_deep_learning: bool = Query(default=True)
+) -> VoiceDetectionResponse:
+    """
+    Handle file uploads for voice detection
+    """
+    start_time = time.time()
+    logger.info(f"File upload received - Filename: {file.filename}, Language: {language}")
+    
+    try:
+        # Validate language
+        if language not in settings.supported_languages:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported language: {language}. Supported: {settings.supported_languages}"
+            )
+
+        # Read file
+        audio_bytes = await file.read()
+        
+        # Process audio (load directly from bytes)
+        try:
+            # We reuse load_audio logic which expects bytes
+            # But process_base64_audio did both decode + extract. 
+            # We need to manually do the pipeline here using audio_processor methods
+            waveform, sr = audio_processor.load_audio(audio_bytes)
+            features = audio_processor.extract_features(waveform, sr)
+            
+            logger.info(
+                f"Audio processed - Duration: {features.duration:.2f}s, "
+                f"Sample rate: {features.sample_rate}Hz"
+            )
+        except ValueError as e:
+            logger.warning(f"Audio processing failed: {str(e)}")
+            raise HTTPException(
+                status_code=400,
+                detail={"status": "error", "message": str(e)}
+            )
+            
+        # Run detection
+        detection_result = ensemble_detector.detect(
+            features, 
+            language,
+            use_wav2vec2=use_deep_learning
+        )
+        
+        # Return response
+        return VoiceDetectionResponse(
+            status="success",
+            language=language,
+            classification=detection_result.classification,
+            confidenceScore=detection_result.confidence,
+            explanation=detection_result.explanation
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in file upload detection: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={"status": "error", "message": "Internal server error"}
         )
 
 
